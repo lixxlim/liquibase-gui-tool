@@ -5,17 +5,18 @@ const fs = require('fs');
 const Store = require('electron-store').default || require('electron-store');
 const store = new Store();
 
-// 설정 저장
+// 設定保存
 ipcMain.handle('save-settings', (event, data) => {
   store.set('settings', data);
   return true;
 });
 
-// 설정 불러오기
+// 設定読み込み
 ipcMain.handle('load-settings', () => {
   return store.get('settings', {});
 });
 
+// メインウィンドウ作成
 function createWindow() {
   const win = new BrowserWindow({
     width: 1300,
@@ -33,7 +34,7 @@ function createWindow() {
 
 app.whenReady().then(createWindow);
 
-// 파일 선택 다이얼로그
+// ファイル選択ダイアログ
 ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
@@ -42,54 +43,61 @@ ipcMain.handle('dialog:openFile', async () => {
   return result;
 });
 
-// Liquibase 명령 실행
+// Liquibaseコマンド実行
 ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, dbUrl, dbUser, dbPassword, changelogFile }) => {
   return new Promise((resolve, reject) => {
     const liquibaseDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase');
     const cliPath = path.join(liquibaseDir, 'liquibase');
 
     if (!fs.existsSync(cliPath)) {
-      return reject(new Error(`Liquibase CLI가 존재하지 않습니다: ${cliPath}`));
+      return reject(new Error(`Liquibase CLIが存在しません: ${cliPath}`));
     }
 
     if (command !== 'history' && (!changelogFile || !fs.existsSync(changelogFile))) {
-      return reject(new Error('Changelog 파일이 선택되지 않았거나 존재하지 않습니다.'));
+      return reject(new Error('Changelogファイルが選択されていないか、存在しません。'));
     }
 
-    // changelogFile의 디렉토리를 cwd로
+    // changelogFileのディレクトリをcwdに設定
     const cwdDir = changelogFile ? path.dirname(changelogFile) : liquibaseDir;
     const changelogArg = command !== 'history' ? path.basename(changelogFile) : '';
 
+    // コマンド引数構築
     const args = [
       `--url=${dbUrl}`,
       `--username=${dbUser}`,
       `--password=${dbPassword}`
     ];
 
+    // コマンド==Historyではない場合にchangelogFileを追加
     if (command !== 'history') {
       args.unshift(`--changeLogFile=${path.basename(changelogFile)}`);
     }
 
+    // コマンド==Rollbackの場合にrollbackCountを追加
     if (command === 'rollback') {
-      // rollbackCount 자체가 명령어이므로 'rollback'은 넣지 않는다
       args.push('rollbackCount', rollbackCount.toString());
     } else {
-      args.push(command); // update, status, history 등
+      args.push(command);
     }
+
+    // Liquibaseコマンド実行
     const lb = spawn(cliPath, args, {
-      cwd: cwdDir,  // <- changelogFile이 있는 폴더를 cwd로
+      cwd: cwdDir,
       env: process.env,
     });
 
+    // コマンド出力収集
     let output = '';
     lb.stdout.on('data', (data) => output += data.toString());
     lb.stderr.on('data', (data) => output += data.toString());
 
+    // コマンド終了処理
     lb.on('close', (code) => {
       if (code === 0) resolve(output);
       else reject(new Error(output || `Liquibase exited with code ${code}`));
     });
 
+    // エラー処理
     lb.on('error', (err) => reject(err));
   });
 });

@@ -14,7 +14,7 @@ module.exports = {
       config: {},
     },
     {
-      name: '@electron-forge/maker-dmg', // macOS용
+      name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
       config: {}
     },

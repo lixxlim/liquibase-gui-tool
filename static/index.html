@@ -1,76 +1,83 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ja">
 
 <head>
   <meta charset="UTF-8">
   <title>Liquibase Control</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./bootstrap/bootstrap.min.css">
 </head>
 
-<body class="bg-gray-50 font-sans p-6">
+<body class="bg-light p-4">
 
-  <h1 class="text-2xl font-bold mb-6">Liquibase Command</h1>
+  <div class="container">
+    <h1 class="mb-2">Liquibase Command</h1>
 
-  <!-- コマンド選択領域 -->
-  <div class="flex items-center gap-2 mb-4">
-    <label for="commandSelect" class="w-32 font-semibold">Command:</label>
-    <select id="commandSelect" class="border border-gray-300 rounded px-2 py-1 w-40">
-      <option value="history">History</option>
-      <option value="status">Status</option>
-      <option value="update">Update</option>
-      <option value="rollback">Rollback</option>
-    </select>
-
-    <!-- オプション領域 -->
-    <div class="ml-4 flex items-center gap-2">
-      <div id="changelogGroup" class="flex items-center gap-2">
-        <input type="text" id="changelogFile" placeholder="Changelog選択"
-          class="border border-gray-300 rounded px-2 py-1 w-96">
-        <button id="browseBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition">選択</button>
+    <!-- コマンド選択領域 -->
+    <div class="row align-items-center mb-3">
+      <label for="commandSelect" class="col-auto col-form-label fw-semibold">Command:</label>
+      <div class="col-auto">
+        <select id="commandSelect" class="form-select">
+          <option value="history">History</option>
+          <option value="status">Status</option>
+          <option value="update">Update</option>
+          <option value="rollback">Rollback</option>
+        </select>
       </div>
-      <div id="rollbackGroup" class="flex items-center gap-2 hidden">
-        <label for="rollbackCount" class="font-semibold">RollbackCount:</label>
-        <input type="number" id="rollbackCount" value="1" min="1" max="999"
-          class="border border-gray-300 rounded px-2 py-1 w-20">
+
+      <div class="col-auto d-flex align-items-center gap-2" id="changelogGroup">
+        <input type="text" id="changelogFile" class="form-control" placeholder="Changelog選択" style="width: 300px;">
+        <button id="browseBtn" class="btn btn-primary">選択</button>
+      </div>
+
+      <div class="col-auto d-flex align-items-center gap-2 d-none" id="rollbackGroup">
+        <label for="rollbackCount" class="fw-semibold mb-0">RollbackCount:</label>
+        <input type="number" id="rollbackCount" class="form-control" value="1" min="1" max="999" style="width: 70px;">
       </div>
     </div>
+
+
+
+    <!-- DB情報領域 -->
+    <div class="mb-3">
+      <div class="mb-2 row align-items-center">
+        <label for="dbUrl" class="col-sm-2 col-form-label fw-semibold">Database URL:</label>
+        <div class="col-sm-10">
+          <input type="text" id="dbUrl" class="form-control" value="jdbc:postgresql://localhost:5432/">
+        </div>
+      </div>
+      <div class="mb-2 row align-items-center">
+        <label for="dbName" class="col-sm-2 col-form-label fw-semibold">Database Name:</label>
+        <div class="col-sm-10">
+          <input type="text" id="dbName" class="form-control" value="postgres">
+        </div>
+      </div>
+      <div class="mb-2 row align-items-center">
+        <label for="dbUser" class="col-sm-2 col-form-label fw-semibold">User Name:</label>
+        <div class="col-sm-10">
+          <input type="text" id="dbUser" class="form-control" value="postgres">
+        </div>
+      </div>
+      <div class="mb-2 row align-items-center">
+        <label for="dbPassword" class="col-sm-2 col-form-label fw-semibold">Password:</label>
+        <div class="col-sm-10">
+          <input type="password" id="dbPassword" class="form-control" value="postgres">
+        </div>
+      </div>
+    </div>
+
+    <!-- ボタン領域 -->
+    <div class="mb-3">
+      <button id="runBtn" class="btn btn-primary me-2">コマンド実行</button>
+      <button id="saveBtn" class="btn btn-secondary">設定保存</button>
+    </div>
+
+    <!-- 出力領域 -->
+    <pre id="output" class="border rounded p-3"
+      style="height: 430px; overflow-y: auto; background-color: #f5f5f5; font-size: 0.7rem;"></pre>
+
   </div>
 
-  <!-- DB情報領域 -->
-  <div class="flex flex-col gap-3 mb-4">
-    <div class="flex items-center gap-2">
-      <label for="dbUrl" class="w-32 font-semibold">Database URL:</label>
-      <input type="text" id="dbUrl" value="jdbc:postgresql://localhost:5432/"
-        class="border border-gray-300 rounded px-2 py-1 flex-1">
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="dbName" class="w-32 font-semibold">Database Name:</label>
-      <input type="text" id="dbName" value="postgres" class="border border-gray-300 rounded px-2 py-1 flex-1">
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="dbUser" class="w-32 font-semibold">User Name:</label>
-      <input type="text" id="dbUser" value="postgres" class="border border-gray-300 rounded px-2 py-1 flex-1">
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="dbPassword" class="w-32 font-semibold">Password:</label>
-      <input type="password" id="dbPassword" value="postgres" class="border border-gray-300 rounded px-2 py-1 flex-1">
-    </div>
-  </div>
-
-  <!-- ボタン領域 -->
-  <div class="flex gap-2 mb-4">
-    <button id="runBtn"
-      class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded transition font-medium">コマンド実行</button>
-    <button id="saveBtn"
-      class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded transition font-medium">DB設定保存</button>
-  </div>
-
-  <!-- 出力領域 -->
-  <pre id="output"
-    class="bg-gray-100 border border-gray-300 p-3 rounded h-[450px] overflow-y-auto whitespace-pre-wrap text-sm"></pre>
-
-
+  <script src="./bootstrap/bootstrap.bundle.min.js"></script>
   <script>
     const commandSelect = document.getElementById('commandSelect');
     const changelogGroup = document.getElementById('changelogGroup');
@@ -86,23 +93,25 @@
     const dbUser = document.getElementById('dbUser');
     const dbPassword = document.getElementById('dbPassword');
 
-    // コマンド選択時のUI更新
+    // コマンド選択によるUI変更
     commandSelect.addEventListener('change', () => {
       const cmd = commandSelect.value;
+
       if (cmd === 'history') {
-        changelogGroup.classList.add('hidden');
-        rollbackGroup.classList.add('hidden');
-      } else if (cmd === 'rollback') {
-        changelogGroup.classList.remove('hidden');
-        rollbackGroup.classList.remove('hidden');
+        changelogGroup.classList.add('d-none');
       } else {
-        changelogGroup.classList.remove('hidden');
-        rollbackGroup.classList.add('hidden');
+        changelogGroup.classList.remove('d-none');
+      }
+
+      if (cmd === 'rollback') {
+        rollbackGroup.classList.remove('d-none');
+      } else {
+        rollbackGroup.classList.add('d-none');
       }
     });
     commandSelect.dispatchEvent(new Event('change'));
 
-    // ファイル選択
+    // ボタンイベント
     browseBtn.addEventListener('click', async () => {
       const result = await window.liquibaseAPI.openFile();
       if (!result.canceled && result.filePaths.length > 0) {
@@ -110,7 +119,7 @@
       }
     });
 
-    // 実行
+    // コマンド実行時の出力処理
     runBtn.addEventListener('click', async () => {
       const cmd = commandSelect.value;
       const count = parseInt(rollbackCount.value || '1', 10);
@@ -124,23 +133,11 @@
         const result = await window.liquibaseAPI.runCommand(options);
         output.textContent = result;
       } catch (err) {
-        output.textContent = '⚠️ エラーが発生しました:\n' + err.message;
+        output.textContent = '⚠️ エラー発生:\n' + err.message;
       }
     });
 
-    // 保存と読み込み
-    (async () => {
-      const saved = await window.liquibaseAPI.loadSettings();
-      if (saved.command) commandSelect.value = saved.command;
-      if (saved.changelogFile) changelogFileInput.value = saved.changelogFile;
-      if (saved.rollbackCount) rollbackCount.value = saved.rollbackCount;
-      if (saved.dbUrl) dbUrl.value = saved.dbUrl;
-      if (saved.dbName) dbName.value = saved.dbName;
-      if (saved.dbUser) dbUser.value = saved.dbUser;
-      if (saved.dbPassword) dbPassword.value = saved.dbPassword;
-      commandSelect.dispatchEvent(new Event('change'));
-    })();
-
+    // 設定保存ボタンのイベント
     saveBtn.addEventListener('click', async () => {
       const data = {
         command: commandSelect.value,
@@ -155,7 +152,6 @@
       alert('設定が保存されました。');
     });
   </script>
-
 </body>
 
 </html>
