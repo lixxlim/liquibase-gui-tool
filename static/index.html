@@ -4,52 +4,15 @@
   <meta charset="UTF-8">
   <title>Liquibase Control</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-
-    label {
-      font-weight: bold;
-    }
-
-    input[type="text"], input[type="password"], input[type="number"], select {
-      margin-bottom: 10px;
-      padding: 5px;
-      font-size: 14px;
-    }
-
-    #dbUrl {
-      width: 600px;
-    }
-
-    #rollbackCount {
-      width: 60px;
-      margin-left: 10px;
-    }
-
-    .form-row {
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .command-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* 출력 영역 스타일 */
-    #output {
-      background-color: #f0f0f0; /* 연한 회색 */
-      padding: 10px;
-      border: 1px solid #ccc;
-      height: 400px;           /* 높이 고정 */
-      overflow-y: auto;        /* 내용 많으면 스크롤 */
-      white-space: pre-wrap;   /* 줄바꿈 유지 */
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { font-weight: bold; }
+    input, select, button { margin-bottom: 10px; padding: 5px; font-size: 14px; }
+    #dbUrl { width: 600px; }
+    #rollbackCount { width: 60px; }
+    .form-row { margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .command-row { display: flex; align-items: center; gap: 10px; }
+    #output { background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    .flex-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   </style>
 </head>
 <body>
@@ -64,10 +27,16 @@
       <option value="rollback">Rollback</option>
     </select>
 
-    <!-- rollbackCount를 같은 줄에 표시 -->
-    <div id="rollbackGroup" style="display:none; align-items: center;">
+    <!-- Rollback 숫자 선택 영역 -->
+    <div id="rollbackGroup" class="flex-right" style="display:none;">
       <label for="rollbackCount">Rollback 개수:</label>
       <input type="number" id="rollbackCount" value="1" min="1" max="999" />
+    </div>
+
+    <!-- 파일 선택 영역 -->
+    <div id="changelogGroup" class="flex-right">
+      <input type="text" id="changelogFile" />
+      <button id="browseBtn">파일 선택</button>
     </div>
   </div>
 
@@ -92,40 +61,67 @@
   </div>
 
   <button id="runBtn">실행</button>
-
   <pre id="output"></pre>
 
   <script>
+    const commandSelect = document.getElementById('commandSelect');
+    const changelogGroup = document.getElementById('changelogGroup');
+    const rollbackGroup = document.getElementById('rollbackGroup');
+    const changelogFileInput = document.getElementById('changelogFile');
+    const browseBtn = document.getElementById('browseBtn');
     const runBtn = document.getElementById('runBtn');
     const output = document.getElementById('output');
-    const commandSelect = document.getElementById('commandSelect');
-    const rollbackGroup = document.getElementById('rollbackGroup');
     const rollbackCount = document.getElementById('rollbackCount');
     const dbUrl = document.getElementById('dbUrl');
     const dbName = document.getElementById('dbName');
     const dbUser = document.getElementById('dbUser');
     const dbPassword = document.getElementById('dbPassword');
 
-    // 롤백 선택 시 숫자 입력창 표시
+    // 명령 선택 시 UI 업데이트
     commandSelect.addEventListener('change', () => {
-      rollbackGroup.style.display = commandSelect.value === 'rollback' ? 'flex' : 'none';
+      const cmd = commandSelect.value;
+      if (cmd === 'history') {
+        changelogGroup.style.display = 'none';
+        rollbackGroup.style.display = 'none';
+      } else if (cmd === 'rollback') {
+        changelogGroup.style.display = 'flex';
+        rollbackGroup.style.display = 'flex';
+      } else {
+        changelogGroup.style.display = 'flex';
+        rollbackGroup.style.display = 'none';
+      }
     });
 
+    // 초기 상태 반영
+    commandSelect.dispatchEvent(new Event('change'));
+
+    // 파일 선택
+    browseBtn.addEventListener('click', async () => {
+      const result = await window.liquibaseAPI.openFile();
+      if (!result.canceled && result.filePaths.length > 0) {
+        changelogFileInput.value = result.filePaths[0];
+      }
+    });
+
+    // Liquibase 실행
     runBtn.addEventListener('click', async () => {
       const cmd = commandSelect.value;
       const count = parseInt(rollbackCount.value || '1', 10);
-      const url = dbUrl.value + dbName.value; // URL + DB명 결합
+      const url = dbUrl.value + dbName.value;
 
       output.textContent = `${cmd} 실행 중...`;
 
       try {
-        const result = await window.liquibaseAPI.runCommand({
+        const options = {
           command: cmd,
-          rollbackCount: cmd === 'rollback' ? count : undefined,
           dbUrl: url,
           dbUser: dbUser.value,
           dbPassword: dbPassword.value
-        });
+        };
+        if (cmd !== 'history') options.changelogFile = changelogFileInput.value;
+        if (cmd === 'rollback') options.rollbackCount = count;
+
+        const result = await window.liquibaseAPI.runCommand(options);
         output.textContent = result;
       } catch (err) {
         output.textContent = '⚠️ 오류 발생:\n' + err.message;
