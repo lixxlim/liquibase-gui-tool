@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Liquibase Control</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="password"], input[type="number"], select {
+      margin-bottom: 10px;
+      padding: 5px;
+      font-size: 14px;
+    }
+
+    #dbUrl {
+      width: 600px;
+    }
+
+    #rollbackCount {
+      width: 60px;
+      margin-left: 10px;
+    }
+
+    .form-row {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .command-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 출력 영역 스타일 */
+    #output {
+      background-color: #f0f0f0; /* 연한 회색 */
+      padding: 10px;
+      border: 1px solid #ccc;
+      height: 400px;           /* 높이 고정 */
+      overflow-y: auto;        /* 내용 많으면 스크롤 */
+      white-space: pre-wrap;   /* 줄바꿈 유지 */
+    }
+  </style>
+</head>
+<body>
+  <h1>Liquibase Command</h1>
+
+  <div class="form-row command-row">
+    <label for="commandSelect">명령 선택:</label>
+    <select id="commandSelect">
+      <option value="history">History</option>
+      <option value="status">Status</option>
+      <option value="update">Update</option>
+      <option value="rollback">Rollback</option>
+    </select>
+
+    <!-- rollbackCount를 같은 줄에 표시 -->
+    <div id="rollbackGroup" style="display:none; align-items: center;">
+      <label for="rollbackCount">Rollback 개수:</label>
+      <input type="number" id="rollbackCount" value="1" min="1" max="999" />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="dbUrl">Database URL:</label>
+    <input type="text" id="dbUrl" value="jdbc:postgresql://localhost:5432/" />
+  </div>
+
+  <div class="form-row">
+    <label for="dbName">Database Name:</label>
+    <input type="text" id="dbName" value="postgres" />
+  </div>
+
+  <div class="form-row">
+    <label for="dbUser">User Name:</label>
+    <input type="text" id="dbUser" value="postgres" />
+  </div>
+
+  <div class="form-row">
+    <label for="dbPassword">Password:</label>
+    <input type="password" id="dbPassword" value="postgres" />
+  </div>
+
+  <button id="runBtn">실행</button>
+
+  <pre id="output"></pre>
+
+  <script>
+    const runBtn = document.getElementById('runBtn');
+    const output = document.getElementById('output');
+    const commandSelect = document.getElementById('commandSelect');
+    const rollbackGroup = document.getElementById('rollbackGroup');
+    const rollbackCount = document.getElementById('rollbackCount');
+    const dbUrl = document.getElementById('dbUrl');
+    const dbName = document.getElementById('dbName');
+    const dbUser = document.getElementById('dbUser');
+    const dbPassword = document.getElementById('dbPassword');
+
+    // 롤백 선택 시 숫자 입력창 표시
+    commandSelect.addEventListener('change', () => {
+      rollbackGroup.style.display = commandSelect.value === 'rollback' ? 'flex' : 'none';
+    });
+
+    runBtn.addEventListener('click', async () => {
+      const cmd = commandSelect.value;
+      const count = parseInt(rollbackCount.value || '1', 10);
+      const url = dbUrl.value + dbName.value; // URL + DB명 결합
+
+      output.textContent = `${cmd} 실행 중...`;
+
+      try {
+        const result = await window.liquibaseAPI.runCommand({
+          command: cmd,
+          rollbackCount: cmd === 'rollback' ? count : undefined,
+          dbUrl: url,
+          dbUser: dbUser.value,
+          dbPassword: dbPassword.value
+        });
+        output.textContent = result;
+      } catch (err) {
+        output.textContent = '⚠️ 오류 발생:\n' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
