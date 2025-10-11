@@ -2,7 +2,19 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const isDev = require('electron-is-dev');
+const Store = require('electron-store').default || require('electron-store');
+const store = new Store();
+
+// 설정 저장
+ipcMain.handle('save-settings', (event, data) => {
+  store.set('settings', data);
+  return true;
+});
+
+// 설정 불러오기
+ipcMain.handle('load-settings', () => {
+  return store.get('settings', {});
+});
 
 function createWindow() {
   const win = new BrowserWindow({

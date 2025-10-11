@@ -14,7 +14,7 @@
     "run-packaged": "open ./out/my-electron-app-darwin-arm64/my-electron-app.app"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/cli": "^7.8.3",
     "@electron-forge/maker-deb": "^7.10.2",
     "@electron-forge/maker-dmg": "^7.10.2",
     "@electron-forge/maker-rpm": "^7.10.2",
@@ -28,6 +28,7 @@
   "dependencies": {
     "electron-is-dev": "^3.0.1",
     "electron-squirrel-startup": "^1.0.1",
+    "electron-store": "^11.0.2",
     "node-liquibase": "^4.1.1",
     "pg": "^8.16.3"
   },

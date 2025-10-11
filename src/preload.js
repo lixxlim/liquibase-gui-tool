@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('liquibaseAPI', {
-  // Liquibase 실행
   runCommand: (options) => ipcRenderer.invoke('run-liquibase-command', options),
-  // 파일 선택
-  openFile: () => ipcRenderer.invoke('dialog:openFile')
+  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  // 저장 및 불러오기
+  saveSettings: (data) => ipcRenderer.invoke('save-settings', data),
+  loadSettings: () => ipcRenderer.invoke('load-settings')
 });
