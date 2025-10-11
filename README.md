@@ -4,14 +4,20 @@ liquibase-gui-tool is an Electron application for database management that inclu
 
 ## Included Open Source
 
-This application includes **Liquibase Community Edition**.
+This application includes the following open source components:
 
-- License: Apache License 2.0  
-- Copyright: © 2006-2025 Liquibase, Inc.  
+### Liquibase Community Edition
+- License: Apache License 2.0
+- Copyright: © 2006-2025 Liquibase, Inc.
 - Official website: [https://www.liquibase.org/](https://www.liquibase.org/)
 
-Following Liquibase's license, this app includes the Liquibase CLI **without modification**.  
-For full license details, see the `LICENSE` file included in the distribution package.
+### Bootstrap 5
+- License: MIT License
+- Copyright: © 2011-2025 The Bootstrap Authors
+- Official website: [https://getbootstrap.com/](https://getbootstrap.com/)
+
+Both Liquibase and Bootstrap are included **without modification**.  
+For full license details, see the corresponding `LICENSE` files included in the distribution.
 
 ## License for This Application
 
