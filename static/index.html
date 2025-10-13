@@ -38,6 +38,7 @@
 
 
     <!-- DB情報領域 -->
+    <!-- Database URL -->
     <div class="mb-3">
       <div class="mb-2 row align-items-center">
         <label for="dbUrl" class="col-sm-2 col-form-label fw-semibold">Database URL:</label>
@@ -45,18 +46,27 @@
           <input type="text" id="dbUrl" class="form-control" value="jdbc:postgresql://localhost:5432/">
         </div>
       </div>
+      <!-- Database Name & Schema Name -->
       <div class="mb-2 row align-items-center">
+        <!-- Database Name -->
         <label for="dbName" class="col-sm-2 col-form-label fw-semibold">Database Name:</label>
-        <div class="col-sm-10">
+        <div class="col-sm-5">
           <input type="text" id="dbName" class="form-control" value="postgres">
         </div>
+        <!-- Schema Name -->
+        <label for="dbSchema" class="col-sm-1 col-form-label fw-semibold text-end">Schema:</label>
+        <div class="col-sm-4">
+          <input type="text" id="dbSchema" class="form-control" value="public">
+        </div>
       </div>
+      <!-- User Name -->
       <div class="mb-2 row align-items-center">
         <label for="dbUser" class="col-sm-2 col-form-label fw-semibold">User Name:</label>
         <div class="col-sm-10">
           <input type="text" id="dbUser" class="form-control" value="postgres">
         </div>
       </div>
+      <!-- Password -->
       <div class="mb-2 row align-items-center">
         <label for="dbPassword" class="col-sm-2 col-form-label fw-semibold">Password:</label>
         <div class="col-sm-10">
@@ -124,12 +134,14 @@
       const cmd = commandSelect.value;
       const count = parseInt(rollbackCount.value || '1', 10);
       const url = dbUrl.value + dbName.value;
+      const dbSchema = document.getElementById('dbSchema');
       output.textContent = `${cmd} 実行中...`;
 
       try {
-        const options = { command: cmd, dbUrl: url, dbUser: dbUser.value, dbPassword: dbPassword.value };
+        const options = { command: cmd, dbUrl: url, dbUser: dbUser.value, dbPassword: dbPassword.value, dbSchema: dbSchema.value };
         if (cmd !== 'history') options.changelogFile = changelogFileInput.value;
         if (cmd === 'rollback') options.rollbackCount = count;
+
         const result = await window.liquibaseAPI.runCommand(options);
         output.textContent = result;
       } catch (err) {
@@ -145,6 +157,7 @@
         rollbackCount: rollbackCount.value,
         dbUrl: dbUrl.value,
         dbName: dbName.value,
+        dbSchema: dbSchema.value,
         dbUser: dbUser.value,
         dbPassword: dbPassword.value
       };

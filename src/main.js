@@ -65,7 +65,7 @@ ipcMain.handle('dialog:openFile', async () => {
 ============================= */
 
 // Liquibaseコマンド実行
-ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, dbUrl, dbUser, dbPassword, changelogFile }) => {
+ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, dbUrl, dbUser, dbPassword, changelogFile, dbSchema }) => {
   return new Promise((resolve, reject) => {
     try {
       const isWin = os.platform() === 'win32';
@@ -90,7 +90,8 @@ ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, 
       const args = [
         `--url=${dbUrl}`,
         `--username=${dbUser}`,
-        `--password=${dbPassword}`
+        `--password=${dbPassword}`,
+        `--defaultSchemaName=${dbSchema}`
       ];
 
       // コマンド==Historyではない場合にchangelogFileを追加
