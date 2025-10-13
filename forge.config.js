@@ -11,7 +11,7 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {name: 'my-electron-app',},
     },
     {
       name: '@electron-forge/maker-dmg',
