@@ -61,10 +61,10 @@ jobs:
               ARCH="$(uname -m)"
               if [ "$ARCH" = "arm64" ]; then
                 echo "🔹 Fetching latest JDK 21 for macOS (ARM64)..."
-                PATTERN='mac_.*aarch64.*hotspot.*tar\.gz'
+                PATTERN='jdk_.*aarch64_mac_hotspot.*tar\.gz'
               else
                 echo "🔹 Fetching latest JDK 21 for macOS (x64)..."
-                PATTERN='mac_.*x64.*hotspot.*tar\.gz'
+                PATTERN='jdk_.*x64_mac_hotspot.*tar\.gz'
               fi
               set +o pipefail
               ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
