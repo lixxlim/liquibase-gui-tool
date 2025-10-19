@@ -6,7 +6,6 @@ module.exports = {
     asar: {
       unpackDir: 'liquibase'
     },
-    extraResource: ['liquibase/'],
   },
   makers: [
     {
