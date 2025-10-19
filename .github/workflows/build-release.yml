@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [windows-latest]
 
     steps:
       - name: Checkout repository
@@ -41,29 +41,20 @@ jobs:
           set -o pipefail
 
           case "${{ matrix.os }}" in
-
-            "macos-latest")
-              ARCH="$(uname -m)"
-              if [ "$ARCH" = "arm64" ]; then
-                echo "🔹 Fetching latest JDK 21 for macOS (ARM64)..."
-                PATTERN='jdk_.*aarch64_mac_hotspot.*tar\.gz'
-              else
-                echo "🔹 Fetching latest JDK 21 for macOS (x64)..."
-                PATTERN='jdk_.*x64_mac_hotspot.*tar\.gz'
-              fi
-              set +o pipefail
-              ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
-                | grep -i "browser_download_url.*${PATTERN}" \
-                | cut -d '"' -f 4 | head -n 1)
-              set -o pipefail
-              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (macOS)"; exit 1; }
+            "windows-latest")
+              echo "🔹 Fetching latest JDK 21 for Windows (x64)..."
+              ASSET_URL=$(echo "$ALL_URLS" | grep -i 'jdk_.*x64_windows.*hotspot.*\.zip' | head -n 1)
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (Windows)"; echo "$ALL_URLS" | head -n 50; exit 1; }
               echo "→ $ASSET_URL"
-              curl -fsSL -o jdk.tar.gz "$ASSET_URL"
-              tar -xzf jdk.tar.gz
-              rm -f jdk.tar.gz
-              mkdir -p jdk21_darwin
-              mv jdk-21*/Contents/Home/* jdk21_darwin/
+              curl -fsSL -o jdk.zip "$ASSET_URL"
+              
+              # ✅ PowerShell로 ZIP 해제 (tar 대신)
+              powershell -Command "Expand-Archive -Path 'jdk.zip' -DestinationPath '.'"
+              
+              rm -f jdk.zip
+              mv jdk-21* jdk21_win32
               ;;
+
           esac
 
           cd ..
