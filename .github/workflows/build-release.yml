@@ -1,5 +1,8 @@
 name: Build and Release Electron App
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
@@ -24,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install build tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
       - name: Prepare JDK for Liquibase
         shell: bash
         run: |
@@ -33,13 +42,18 @@ jobs:
 
           case "${{ matrix.os }}" in
             "windows-latest")
-              echo "🔹 Fetching latest JDK 21 for Windows..."
+              echo "🔹 Fetching latest JDK 21 for Windows (x64)..."
+              set +o pipefail
               ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
-                | grep "browser_download_url.*windows_hotspot.*zip" \
-                | cut -d '"' -f 4)
+                | grep -i 'browser_download_url.*windows_x64_hotspot.*zip' \
+                | cut -d '"' -f 4 | head -n 1)
+              set -o pipefail
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (Windows)"; exit 1; }
               echo "→ $ASSET_URL"
               curl -fsSL -o jdk.zip "$ASSET_URL"
+              # Windows 러너에도 tar(bsdtar) 존재 → zip 해제 가능
               tar -xf jdk.zip
+              rm -f jdk.zip
               mv jdk-21* jdk21_win32
               ;;
 
@@ -47,29 +61,38 @@ jobs:
               ARCH="$(uname -m)"
               if [ "$ARCH" = "arm64" ]; then
                 echo "🔹 Fetching latest JDK 21 for macOS (ARM64)..."
-                PATTERN="mac_hotspot.*aarch64.*tar.gz"
+                PATTERN='mac_.*aarch64.*hotspot.*tar\.gz'
               else
                 echo "🔹 Fetching latest JDK 21 for macOS (x64)..."
-                PATTERN="mac_hotspot.*x64.*tar.gz"
+                PATTERN='mac_.*x64.*hotspot.*tar\.gz'
               fi
+              set +o pipefail
               ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
                 | grep -i "browser_download_url.*${PATTERN}" \
                 | cut -d '"' -f 4 | head -n 1)
+              set -o pipefail
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (macOS)"; exit 1; }
               echo "→ $ASSET_URL"
               curl -fsSL -o jdk.tar.gz "$ASSET_URL"
               tar -xzf jdk.tar.gz
+              rm -f jdk.tar.gz
+              # Temurin macOS: jdk-21*/Contents/Home → JAVA_HOME 루트 맞춤
               mkdir -p jdk21_darwin
               mv jdk-21*/Contents/Home/* jdk21_darwin/
               ;;
 
             "ubuntu-latest")
-              echo "🔹 Fetching latest JDK 21 for Linux..."
+              echo "🔹 Fetching latest JDK 21 for Linux (x64)..."
+              set +o pipefail
               ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
-                | grep "browser_download_url.*linux_hotspot.*tar.gz" \
+                | grep -i 'browser_download_url.*linux_x64_hotspot.*tar\.gz' \
                 | cut -d '"' -f 4 | head -n 1)
+              set -o pipefail
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (Linux)"; exit 1; }
               echo "→ $ASSET_URL"
               curl -fsSL -o jdk.tar.gz "$ASSET_URL"
               tar -xzf jdk.tar.gz
+              rm -f jdk.tar.gz
               mv jdk-21* jdk21_linux
               ;;
           esac
