@@ -1,0 +1,100 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-release:
+    name: Build and Release on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      # JDK 다운로드/배치 (bash로 강제)
+      - name: Prepare JDK for Liquibase
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p liquibase
+          cd liquibase
+          case "${{ matrix.os }}" in
+            "windows-latest")
+              echo "Downloading JDK for Windows (x64)..."
+              curl -fsSL -o jdk.zip https://github.com/adoptium/temurin21-binaries/releases/latest/download/OpenJDK21U-jdk_x64_windows_hotspot.zip
+              # Windows 러너엔 tar가 기본 제공되어 zip도 풀 수 있음
+              tar -xf jdk.zip
+              mv jdk-21* jdk21_win32
+              ;;
+            "macos-latest")
+              ARCH="$(uname -m)"
+              if [ "$ARCH" = "arm64" ]; then
+                echo "Downloading JDK for macOS (aarch64)..."
+                URL="https://github.com/adoptium/temurin21-binaries/releases/latest/download/OpenJDK21U-jdk_aarch64_mac_hotspot.tar.gz"
+              else
+                echo "Downloading JDK for macOS (x64)..."
+                URL="https://github.com/adoptium/temurin21-binaries/releases/latest/download/OpenJDK21U-jdk_x64_mac_hotspot.tar.gz"
+              fi
+              curl -fsSL -o jdk.tar.gz "$URL"
+              tar -xzf jdk.tar.gz
+              # Temurin macOS는 Contents/Home 구조 → Home을 JAVA_HOME 루트로 맞춤
+              mkdir -p jdk21_darwin
+              mv jdk-21*/Contents/Home/* jdk21_darwin/
+              ;;
+            "ubuntu-latest")
+              echo "Downloading JDK for Linux (x64)..."
+              curl -fsSL -o jdk.tar.gz https://github.com/adoptium/temurin21-binaries/releases/latest/download/OpenJDK21U-jdk_x64_linux_hotspot.tar.gz
+              tar -xzf jdk.tar.gz
+              mv jdk-21* jdk21_linux
+              ;;
+          esac
+          cd ..
+          ls -la liquibase
+
+      - name: Build with Electron Forge
+        run: npm run make
+
+      - name: Zip build artifacts (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          zip -r "${{ matrix.os }}.zip" out/
+
+      - name: Zip build artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          if (Test-Path .\windows-latest.zip) { Remove-Item .\windows-latest.zip -Force }
+          Compress-Archive -Path .\out\* -DestinationPath .\windows-latest.zip -Force
+
+      - name: Create GitHub Release (create once on Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "Release v${{ github.run_number }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          files: ${{ matrix.os }}.zip
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
