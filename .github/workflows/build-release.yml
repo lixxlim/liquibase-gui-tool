@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest]
 
     steps:
       - name: Checkout repository
@@ -41,16 +41,6 @@ jobs:
           set -o pipefail
 
           case "${{ matrix.os }}" in
-            "windows-latest")
-              echo "🔹 Fetching latest JDK 21 for Windows (x64)..."
-              ASSET_URL=$(echo "$ALL_URLS" | grep -i 'jdk_.*x64_windows.*hotspot.*\.zip' | head -n 1)
-              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (Windows)"; echo "$ALL_URLS" | head -n 50; exit 1; }
-              echo "→ $ASSET_URL"
-              curl -fsSL -o jdk.zip "$ASSET_URL"
-              tar -xf jdk.zip
-              rm -f jdk.zip
-              mv jdk-21* jdk21_win32
-              ;;
 
             "macos-latest")
               ARCH="$(uname -m)"
