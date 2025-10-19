@@ -59,24 +59,23 @@ jobs:
               ARCH="$(uname -m)"
               if [ "$ARCH" = "arm64" ]; then
                 echo "🔹 Fetching latest JDK 21 for macOS (ARM64)..."
-                PATTERN='jdk_.*aarch64_mac_hotspot.*tar\.gz'
+                ASSET_URL=$(echo "$ALL_URLS" | grep -i 'OpenJDK21U-jdk_aarch64_mac_hotspot_.*\.tar\.gz' | head -n 1)
               else
                 echo "🔹 Fetching latest JDK 21 for macOS (x64)..."
-                PATTERN='jdk_.*x64_mac_hotspot.*tar\.gz'
+                ASSET_URL=$(echo "$ALL_URLS" | grep -i 'OpenJDK21U-jdk_x64_mac_hotspot_.*\.tar\.gz' | head -n 1)
               fi
-              set +o pipefail
-              ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
-                | grep -i "browser_download_url.*${PATTERN}" \
-                | cut -d '"' -f 4 | head -n 1)
-              set -o pipefail
-              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (macOS)"; exit 1; }
+
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (macOS)"; echo "$ALL_URLS" | head -n 50; exit 1; }
+
               echo "→ $ASSET_URL"
               curl -fsSL -o jdk.tar.gz "$ASSET_URL"
               tar -xzf jdk.tar.gz
               rm -f jdk.tar.gz
+
               mkdir -p jdk21_darwin
               mv jdk-21*/Contents/Home/* jdk21_darwin/
               ;;
+
           esac
 
           cd ..
