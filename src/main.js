@@ -105,7 +105,7 @@ ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, 
       }
 
       // Changelogファイル確認
-      if (command !== 'history' && (!changelogFile || !fs.existsSync(changelogFile))) {
+      if (command !== 'history' && command !== 'clear-checksums' && (!changelogFile || !fs.existsSync(changelogFile))) {
         return reject(new Error('Changelogファイルが選択されていないか、存在しません。'));
       }
 
@@ -121,7 +121,7 @@ ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, 
       ];
 
       // コマンド==Historyではない場合にchangelogFileを追加
-      if (command !== 'history') {
+      if (command !== 'history' && command !== 'clear-checksums') {
         args.unshift(`--changeLogFile=${path.basename(changelogFile)}`);
       }
 

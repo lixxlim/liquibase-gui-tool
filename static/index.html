@@ -21,6 +21,8 @@
           <option value="status">Status</option>
           <option value="update">Update</option>
           <option value="rollback">Rollback</option>
+          <option value="clear-checksums">Clear Checksums</option>
+          <option value="changelog-sync">Changelog Sync</option>
         </select>
       </div>
 
@@ -107,7 +109,7 @@
     commandSelect.addEventListener('change', () => {
       const cmd = commandSelect.value;
 
-      if (cmd === 'history') {
+      if (cmd === 'history' || cmd === 'clear-checksums') {
         changelogGroup.classList.add('d-none');
       } else {
         changelogGroup.classList.remove('d-none');
@@ -139,7 +141,7 @@
 
       try {
         const options = { command: cmd, dbUrl: url, dbUser: dbUser.value, dbPassword: dbPassword.value, dbSchema: dbSchema.value };
-        if (cmd !== 'history') options.changelogFile = changelogFileInput.value;
+        if (cmd !== 'history' && cmd !== 'clear-checksums') options.changelogFile = changelogFileInput.value;
         if (cmd === 'rollback') options.rollbackCount = count;
 
         const result = await window.liquibaseAPI.runCommand(options);
