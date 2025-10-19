@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [macos-latest, windows-latest]
 
     steps:
       - name: Checkout repository
@@ -29,13 +29,16 @@ jobs:
 
       - name: Prepare JDK for Liquibase
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p liquibase
           cd liquibase
 
           set +o pipefail
-          ALL_URLS=$(curl -fsSL https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
+          ALL_URLS=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
             | tr -d '\r' \
             | sed -n 's/.*"browser_download_url": "\(.*\)".*/\1/p')
           set -o pipefail
@@ -47,14 +50,33 @@ jobs:
               [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (Windows)"; echo "$ALL_URLS" | head -n 50; exit 1; }
               echo "→ $ASSET_URL"
               curl -fsSL -o jdk.zip "$ASSET_URL"
-              
-              # ✅ PowerShell로 ZIP 해제 (tar 대신)
               powershell -Command "Expand-Archive -Path 'jdk.zip' -DestinationPath '.'"
-              
               rm -f jdk.zip
               mv jdk-21* jdk21_win32
               ;;
 
+            "macos-latest")
+              ARCH="$(uname -m)"
+              if [ "$ARCH" = "arm64" ]; then
+                echo "🔹 Fetching latest JDK 21 for macOS (ARM64)..."
+                PATTERN='jdk_.*aarch64_mac_hotspot.*tar\.gz'
+              else
+                echo "🔹 Fetching latest JDK 21 for macOS (x64)..."
+                PATTERN='jdk_.*x64_mac_hotspot.*tar\.gz'
+              fi
+              set +o pipefail
+              ASSET_URL=$(curl -s https://api.github.com/repos/adoptium/temurin21-binaries/releases/latest \
+                | grep -i "browser_download_url.*${PATTERN}" \
+                | cut -d '"' -f 4 | head -n 1)
+              set -o pipefail
+              [ -z "${ASSET_URL:-}" ] && { echo "❌ JDK URL not found (macOS)"; exit 1; }
+              echo "→ $ASSET_URL"
+              curl -fsSL -o jdk.tar.gz "$ASSET_URL"
+              tar -xzf jdk.tar.gz
+              rm -f jdk.tar.gz
+              mkdir -p jdk21_darwin
+              mv jdk-21*/Contents/Home/* jdk21_darwin/
+              ;;
           esac
 
           cd ..
