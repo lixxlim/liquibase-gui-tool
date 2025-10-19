@@ -11,7 +11,7 @@
     "make": "electron-forge make",
     "package": "npm run clean && npm run make && npm run run-packaged",
     "clean": "rm -rf out/ && rm -rf node_modules/.cache",
-    "run-packaged": "open ./out/my-electron-app-darwin-arm64/my-electron-app.app"
+    "run-packaged": "open ./out/liquibase-gui-tool-darwin-arm64/liquibase-gui-tool.app"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.8.3",

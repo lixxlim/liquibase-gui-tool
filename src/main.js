@@ -5,7 +5,6 @@ const fs = require('fs');
 const os = require('os');
 const Store = require('electron-store').default || require('electron-store');
 const store = new Store();
-const isWin = os.platform() === 'win32';
 
 /* =============================
     設定保存及び読み込み関連
@@ -68,11 +67,38 @@ ipcMain.handle('dialog:openFile', async () => {
 ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, dbUrl, dbUser, dbPassword, changelogFile, dbSchema }) => {
   return new Promise((resolve, reject) => {
     try {
-      const isWin = os.platform() === 'win32';
-      const javaHome = path.join(process.resourcesPath, 'app.asar.unpacked', isWin ? 'liquibase/jdk21_win32' : 'liquibase/jre_darwin');
+      // Liquibaseディレクトリパス
       const liquibaseDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase');
-      const cliPath = path.join(liquibaseDir, isWin ? 'liquibase.bat' : 'liquibase');
+      
+      // OS判定
+      let javaHome, cliPath, spawnCmd, spawnArgs;
+      const platform = os.platform();
+      switch (platform) {
+        case 'win32':
+          javaHome = path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase/jdk21_win32');
+          cliPath = path.join(liquibaseDir, 'liquibase.bat');
+          spawnCmd = 'cmd.exe';
+          spawnArgs = ['/c'];
+          break;
 
+        case 'darwin':
+          javaHome = path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase/jdk21_darwin');
+          cliPath = path.join(liquibaseDir, 'liquibase');
+          spawnCmd = cliPath;
+          spawnArgs = [];
+          break;
+
+        case 'linux':
+          javaHome = path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase/jdk21_linux');
+          cliPath = path.join(liquibaseDir, 'liquibase');
+          spawnCmd = cliPath;
+          spawnArgs = [];
+          break;
+
+        default:
+          return reject(new Error(`サポートされていないOSです: ${platform}`));
+      }
+      
       // Liquibase CLIパス確認
       if (!fs.existsSync(cliPath)) {
         return reject(new Error(`Liquibase CLIが存在しません: ${cliPath}`));
@@ -106,22 +132,13 @@ ipcMain.handle('run-liquibase-command', async (event, { command, rollbackCount, 
         args.push(command);
       }
 
-      // Liquibaseコマンド分岐
-      let lb;
-      if (isWin) {
-        // 🪟 Windows
-        lb = spawn('cmd.exe', ['/c', cliPath, ...args], {
-          cwd: cwdDir,
-          env: { ...process.env, JAVA_HOME: javaHome },
-          windowsHide: true,
-        });
-      } else {
-        // 🍎 Linux / macOS
-        lb = spawn(cliPath, args, {
-          cwd: cwdDir,
-          env: { ...process.env, JAVA_HOME: javaHome },
-        });
-      }
+      // Liquibaseコマンド実行
+      const fullArgs = spawnCmd === 'cmd.exe' ? [...spawnArgs, cliPath, ...args] : [...spawnArgs, ...args];
+      const lb = spawn(spawnCmd, fullArgs, {
+        cwd: cwdDir,
+        env: { ...process.env, JAVA_HOME: javaHome },
+        windowsHide: platform === 'win32',
+      });
 
       // コマンド出力収集
       let output = '';
