@@ -3,22 +3,95 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
-const Store = require('electron-store').default || require('electron-store');
-const store = new Store();
+const fsp = require('fs/promises');
+
+const INPUT_FILE_NAME = 'input.txt';
+
+function resolveLiquibaseDir() {
+  const candidates = [
+    path.join(process.resourcesPath, 'app.asar.unpacked', 'liquibase'),
+    path.join(__dirname, '../liquibase'),
+    path.join(process.cwd(), 'liquibase'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+
+  return candidates[0];
+}
+
+function resolveInputFilePath() {
+  return path.join(resolveLiquibaseDir(), INPUT_FILE_NAME);
+}
+
+async function ensureInputDirectory() {
+  const filePath = resolveInputFilePath();
+  await fsp.mkdir(path.dirname(filePath), { recursive: true });
+  return filePath;
+}
+
+async function readInputFile() {
+  const filePath = resolveInputFilePath();
+  const content = (await fsp.readFile(filePath, 'utf8')).trim();
+  const entries = content.length > 0 ? content.split(',') : [];
+  const data = {};
+
+  for (const entry of entries) {
+    const [rawKey, ...rawValueParts] = entry.split('=');
+    if (!rawKey) continue;
+    const key = rawKey.trim();
+    const value = rawValueParts.join('=').trim();
+    data[key] = value;
+  }
+
+  return {
+    database_url: data.database_url,
+    database_name: data.database_name,
+    schema: data.schema,
+    user_name: data.user_name,
+  };
+}
+
+async function writeInputFile(values) {
+  const filePath = await ensureInputDirectory();
+  const payload = [
+    `database_url=${values.database_url ?? ''}`,
+    `database_name=${values.database_name ?? ''}`,
+    `schema=${values.schema ?? ''}`,
+    `user_name=${values.user_name ?? ''}`,
+  ].join(',');
+  await fsp.writeFile(filePath, payload, 'utf8');
+}
 
 /* =============================
     設定保存及び読み込み関連
 ============================= */
 
 // 設定保存
-ipcMain.handle('save-settings', (event, data) => {
-  store.set('settings', data);
-  return true;
+ipcMain.handle('save-settings', async (event, data) => {
+  try {
+    await writeInputFile({
+      database_url: data.database_url,
+      database_name: data.database_name,
+      schema: data.schema,
+      user_name: data.user_name,
+    });
+    return { ok: true };
+  } catch (error) {
+    console.error('[save-settings] failed:', error);
+    throw new Error('設定の保存に失敗しました: ' + (error && error.message ? error.message : String(error)));
+  }
 });
 
 // 設定読み込み
-ipcMain.handle('load-settings', () => {
-  return store.get('settings', {});
+ipcMain.handle('load-settings', async () => {
+  try {
+    return await readInputFile();
+  } catch (error) {
+    console.error('[load-settings] failed:', error);
+    return {};
+  }
 });
 
 
