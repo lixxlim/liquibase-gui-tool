@@ -10,7 +10,7 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {name: 'my-electron-app',},
+      config: {name: 'liquibase-gui-tool',},
     },
     {
       name: '@electron-forge/maker-dmg',
