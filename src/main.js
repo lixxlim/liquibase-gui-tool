@@ -50,6 +50,8 @@ async function readInputFile() {
     database_name: data.database_name,
     schema: data.schema,
     user_name: data.user_name,
+    changelog_file: data.changelog_file,
+    command: data.command,
   };
 }
 
@@ -60,6 +62,8 @@ async function writeInputFile(values) {
     `database_name=${values.database_name ?? ''}`,
     `schema=${values.schema ?? ''}`,
     `user_name=${values.user_name ?? ''}`,
+    `changelog_file=${values.changelog_file ?? ''}`,
+    `command=${values.command ?? ''}`,
   ].join(',');
   await fsp.writeFile(filePath, payload, 'utf8');
 }
@@ -76,6 +80,8 @@ ipcMain.handle('save-settings', async (event, data) => {
       database_name: data.database_name,
       schema: data.schema,
       user_name: data.user_name,
+      changelog_file: data.changelog_file,
+      command: data.command,
     });
     return { ok: true };
   } catch (error) {

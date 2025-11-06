@@ -114,6 +114,12 @@
         if (typeof settings.database_name === 'string') dbName.value = settings.database_name;
         if (typeof settings.schema === 'string') dbSchema.value = settings.schema;
         if (typeof settings.user_name === 'string') dbUser.value = settings.user_name;
+        if (typeof settings.changelog_file === 'string') changelogFileInput.value = settings.changelog_file;
+        if (typeof settings.command === 'string') {
+          const isValidCommand = Array.from(commandSelect.options).some((option) => option.value === settings.command);
+          if (isValidCommand) commandSelect.value = settings.command;
+        }
+        commandSelect.dispatchEvent(new Event('change'));
         dbPassword.value = '';
       } catch (error) {
         console.error('設定読み込みに失敗しました', error);
@@ -173,7 +179,9 @@
         database_url: dbUrl.value,
         database_name: dbName.value,
         schema: dbSchema.value,
-        user_name: dbUser.value
+        user_name: dbUser.value,
+        changelog_file: changelogFileInput.value,
+        command: commandSelect.value
       };
       await window.liquibaseAPI.saveSettings(data);
       alert('設定が保存されました。');
